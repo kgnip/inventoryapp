@@ -141,6 +141,7 @@ tbody.innerHTML+=`
 <td>${i.kode}</td><td>${i.nama}</td><td>${i.kategori}</td><td>${i.supplier}</td>
 <td>${fmt(i.min)}</td>
 <td>${fmt(i.stok)}</td>
+<td>${i.satuan}</td>
 <td class="${s==="LOW"?"status-low":"status-ok"}">${s}</td>
 <td><button onclick="openAdjust('${i.kode}')">Adjust</button></td>
 </tr>`;
@@ -170,7 +171,7 @@ modalContent.innerHTML=`
 
 /* AUTOCOMPLETE */
 function autoList(input, cb){
-  const listEl = input.nextElementSibling;
+  const listEl = document.getElementById("list");
   listEl.innerHTML = "";
 
   if(!input.value) return;
@@ -180,108 +181,178 @@ function autoList(input, cb){
     .forEach(i => {
       const d = document.createElement("div");
       d.innerText = i.nama;
-      d.onclick = () => cb(i, input, listEl);
+      d.onclick = () => cb(i);
       listEl.appendChild(d);
     });
 }
 
-  const k = kode.value.trim();
 
-  if(!k){
-    alert("Kode wajib diisi");
-    return;
-  }
-
-  if(isKodeExist(k)){
-    alert("Kode barang sudah digunakan");
-    return;
-  }
-
-  const item = {
-    kode: k,
-    nama: nama.value,
-    kategori: kategori.value,
-    supplier: supplier.value,
-    stok: +stok.value || 0,
-    min: +min.value || 0,
-    satuan: satuan.value
-  };
-
-  try{
-    await saveItemToSheet(item, "add");
-    await loadInventoryFromSheet();
-    closeModal();
-  }catch(err){
-    alert("Gagal simpan ke Google Sheet");
-    console.error(err);
-  }
-}
 
 /* MASUK & KELUAR */
 function openMasuk(){
   selected = null;
+
   modalContent.innerHTML = `
     <h3>Barang Masuk</h3>
-    <input id="nama" onkeyup="autoList(this,selMasuk)" placeholder="Nama">
+
+    <input 
+      id="nama" 
+      placeholder="Nama" 
+      onkeyup="autoList(this, selectItem)"
+    >
+
     <div id="list" class="list"></div>
-    <input id="kode" readonly>
-    <input id="jumlah" type="number" placeholder="Jumlah Barang Masuk">
+
+    <input id="kode" readonly placeholder="Kode">
+
+    <input 
+      id="jumlah" 
+      type="number" 
+      placeholder="Jumlah Barang Masuk"
+    >
+
     <button class="primary" onclick="submitMasuk()">Simpan</button>
     <button onclick="closeModal()">Batal</button>
   `;
+
   openModal();
 }
-
-if(!selected){
-  alert('Pilih barang dari list');
-  return;
+function selectItem(item){
+  selected = item;
+  document.getElementById("nama").value = item.nama;
+  document.getElementById("kode").value = item.kode;
+  document.getElementById("list").innerHTML = "";
 }
-await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec" + "?action=updateStock", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    kode: selected.kode,
-    delta: +jumlah.value
-  })
-});
+async function submitMasuk(){
+  if(!selected){
+    alert("Pilih barang dari list terlebih dahulu");
+    return;
+  }
 
-await loadInventoryFromSheet();
-closeModal();
-">Simpan</button>
-<button onclick="closeModal()">Batal</button>`;openModal();
+  const jumlahEl = document.getElementById("jumlah");
+  const jumlah = Number(jumlahEl.value);
+
+  if(!jumlah || jumlah <= 0){
+    alert("Jumlah harus lebih dari 0");
+    return;
+  }
+
+  try{
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec?action=updateStock",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kode: selected.kode,
+          delta: jumlah
+        })
+      }
+    );
+
+        history.push({
+      tgl: today(),
+      tipe: "MASUK",
+      nama: selected.nama,
+      qty: jumlah
+    });
+
+    await loadInventoryFromSheet();
+    closeModal();
+
+  }catch(err){
+    console.error(err);
+    alert("Gagal menyimpan barang masuk");
+  }
 }
-function selMasuk(i){selected=i;nama.value=i.nama;kode.value=i.kode;list.innerHTML=""}
+
 
 function openKeluar(){
-selected = null;
-modalContent.innerHTML=`
-<h3>Barang Keluar</h3>
-<input id="nama" onkeyup="autoList(this,selMasuk)" placeholder="Nama">
-<div id="list" class="list"></div>
-<input id="kode" readonly>
-<input id="jumlah" type="number" placeholder="Jumlah Barang Keluar">
-<textarea id="ket" placeholder="Digunakan untuk..."></textarea>
-<button class="warn" onclick="
-if(!selected){
-  alert('Pilih barang dari list');
-  return;
-}
-if(+jumlah.value > selected.stok){
-  alert('Jumlah melebihi stok yang tersedia');
-  return;
-}
-await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec" + "?action=updateStock", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    kode: selected.kode,
-    delta: -Number(jumlah.value)
-  })
-});
-">Simpan</button>
+  selected = null;
 
-<button onclick="closeModal()">Batal</button>`;openModal();
+  modalContent.innerHTML = `
+    <h3>Barang Keluar</h3>
+
+    <input
+      id="nama"
+      placeholder="Nama"
+      onkeyup="autoList(this, selectItem)"
+    >
+
+    <div id="list" class="list"></div>
+
+    <input id="kode" readonly placeholder="Kode">
+
+    <input
+      id="jumlah"
+      type="number"
+      placeholder="Jumlah Barang Keluar"
+    >
+
+    <textarea
+      id="ket"
+      placeholder="Digunakan untuk..."
+    ></textarea>
+
+    <button class="warn" onclick="submitKeluar()">Simpan</button>
+    <button onclick="closeModal()">Batal</button>
+  `;
+
+  openModal();
 }
+async function submitKeluar(){
+  if(!selected){
+    alert("Pilih barang dari list terlebih dahulu");
+    return;
+  }
+
+  const jumlahEl = document.getElementById("jumlah");
+  const ketEl    = document.getElementById("ket");
+
+  const jumlah = Number(jumlahEl.value);
+  const ket    = ketEl.value || "";
+
+  if(!jumlah || jumlah <= 0){
+    alert("Jumlah harus lebih dari 0");
+    return;
+  }
+
+  if(jumlah > selected.stok){
+    alert("Jumlah melebihi stok yang tersedia");
+    return;
+  }
+
+  try{
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec?action=updateStock",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kode: selected.kode,
+          delta: -jumlah,
+          ket: ket
+        })
+      }
+    );
+
+    history.push({
+  tgl: today(),
+  tipe: "KELUAR",
+  nama: selected.nama,
+  qty: jumlah,
+  ket: ket
+});
+
+    await loadInventoryFromSheet();
+    closeModal();
+
+  }catch(err){
+    console.error(err);
+    alert("Gagal menyimpan barang keluar");
+  }
+}
+
 
 /* ADJUST */
 function openAdjust(k){
@@ -289,79 +360,115 @@ function openAdjust(k){
   const i = items[adjustIndex];
 
   modalContent.innerHTML = `
-  <h3>Adjustment Item</h3>
+    <h3>Adjustment Item</h3>
 
-  <label>Kode</label>
-  <input id="kode" value="${i.kode}" readonly>
+    <label>Kode</label>
+    <input id="kode" value="${i.kode}" readonly>
 
-  <label>Nama</label>
-  <input id="nama" value="${i.nama}">
+    <label>Nama</label>
+    <input id="nama" value="${i.nama}">
 
-  <label>Kategori</label>
-  <select id="kategori">
-    <option ${i.kategori==="RMPM"?"selected":""}>RMPM</option>
-    <option ${i.kategori==="Sparepart"?"selected":""}>Sparepart</option>
-    <option ${i.kategori==="Chemical"?"selected":""}>Chemical</option>
-  </select>
+    <label>Kategori</label>
+    <select id="kategori">
+      <option value="RMPM" ${i.kategori==="RMPM"?"selected":""}>RMPM</option>
+      <option value="Sparepart" ${i.kategori==="Sparepart"?"selected":""}>Sparepart</option>
+      <option value="Chemical" ${i.kategori==="Chemical"?"selected":""}>Chemical</option>
+    </select>
 
-  <label>Supplier</label>
-  <input id="supplier" value="${i.supplier}">
+    <label>Supplier</label>
+    <input id="supplier" value="${i.supplier}">
 
-  <label>Stok</label>
-  <input id="stok" type="number" value="${i.stok}">
+    <label>Stok</label>
+    <input id="stok" type="number" value="${i.stok}">
 
-  <label>Min Stock</label>
-  <input id="min" type="number" value="${i.min}">
+    <label>Min Stock</label>
+    <input id="min" type="number" value="${i.min}">
 
-  <label>Satuan</label>
-  <input id="satuan" value="${i.satuan}">
+    <label>Satuan</label>
+    <input id="satuan" value="${i.satuan}">
 
-  <button class="primary" onclick="saveAdjust()">Simpan</button>
-  <button onclick="closeModal()">Batal</button>
+    <button class="primary" onclick="saveAdjust()">Simpan</button>
+    <button onclick="closeModal()">Batal</button>
   `;
+
   openModal();
 }
-
-function saveAdjust(){
+async function saveAdjust(){
   if(adjustIndex === null) return;
 
-  items[adjustIndex].nama     = nama.value;
-  items[adjustIndex].kategori = kategori.value;
-  items[adjustIndex].supplier = supplier.value;
-  items[adjustIndex].stok     = +stok.value;
-  items[adjustIndex].min      = +min.value;
-  items[adjustIndex].satuan   = satuan.value;
+  const payload = {
+    kode: kode.value,
+    nama: nama.value,
+    kategori: kategori.value,
+    supplier: supplier.value,
+    stok: Number(stok.value),
+    min: Number(min.value),
+    satuan: satuan.value
+  };
 
-  adjustIndex = null;
-  closeModal();
-  render();
+  try{
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec?action=updateItem",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    await loadInventoryFromSheet();
+    adjustIndex = null;
+    closeModal();
+
+  }catch(err){
+    console.error(err);
+    alert("Gagal menyimpan adjustment");
+  }
 }
 
-function setActiveNav(id){
-  document.querySelectorAll('.nav-btn').forEach(b=>{
-    b.classList.remove('active');
-  });
-  document.getElementById(id).classList.add('active');
-}
 
 /* HISTORY */
 function openHistory(){
-modalContent.innerHTML = `
-<h3>History</h3>
-${history.map(h => `
-  <p>
-    ${h.tgl} - ${h.tipe} - ${h.nama} (${h.qty || 0})
-    ${h.tipe === 'KELUAR' && h.ket ? `<br><small>Ket: ${h.ket}</small>` : ``}
-  </p>
-`).join("")}
-<button onclick="closeModal()">Tutup</button>
-`;
-openModal();
-}
+  if(!Array.isArray(history) || history.length === 0){
+    modalContent.innerHTML = `
+      <h3>History</h3>
+      <p><i>Belum ada riwayat transaksi</i></p>
+      <button onclick="closeModal()">Tutup</button>
+    `;
+    openModal();
+    return;
+  }
 
+  modalContent.innerHTML = `
+    <h3>History</h3>
+
+    ${history
+      .slice()
+      .reverse()
+      .map(h => `
+        <p>
+          <b>${h.tgl}</b> – ${h.tipe} – ${h.nama} (${h.qty ?? 0})
+          ${h.tipe === 'KELUAR' && h.ket ? `<br><small>Ket: ${h.ket}</small>` : ``}
+        </p>
+      `)
+      .join("")}
+
+    <button onclick="closeModal()">Tutup</button>
+  `;
+
+  openModal();
+}
 function showAll(){
   render(items);
   setActiveFilter("btnAll");
+}
+
+function saveHistory(){
+  localStorage.setItem("history", JSON.stringify(history));
+}
+
+function loadHistory(){
+  history = JSON.parse(localStorage.getItem("history")) || [];
 }
 
 
@@ -494,7 +601,7 @@ async function addItem(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbxYPcZ5jIIfpmTLmQLogBWOSSxSYtZY1tAAgweyA8HGzmKhyi553FcOLB3QhzymyuCk5A/exec",
+      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
       {
         method: "POST",
         headers: {"Content-Type":"application/json"},
@@ -536,6 +643,11 @@ function setActiveFilter(id){
   document.getElementById("btnAll").classList.remove("active");
   document.getElementById(id).classList.add("active");
 }
+function setActiveNav(id){
+  document.getElementById("btnInv").classList.remove("active");
+  document.getElementById("btnOrder").classList.remove("active");
+  document.getElementById(id).classList.add("active");
+}
 
   async function loadInventoryFromSheet(){
     const res = await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec"); // ganti dengan Web App URL
@@ -556,7 +668,7 @@ function setActiveFilter(id){
 }
 
 
-function importExcel(){
+async function importExcel(){
   const fileInput = document.getElementById('file');
   if(!fileInput.files.length){
     alert("Pilih file Excel terlebih dahulu");
@@ -564,12 +676,77 @@ function importExcel(){
   }
 
   const reader = new FileReader();
-  reader.onload = function(e){
+
+  reader.onload = async function(e){
     const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, {type:'array'});
+    const workbook = XLSX.read(data, { type:'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    rows.forEach(r => {
-      // Cegah duplikasi kode
-      if(items.some(i => i.kode === r.kode)) return;
+    if(!rows.length){
+      alert("File Excel kosong");
+      return;
+    }
+
+    let success = 0;
+    let skipped = 0;
+
+    for(const r of rows){
+      // validasi minimal
+      if(!r.kode || !r.nama){
+        skipped++;
+        continue;
+      }
+
+      // cegah duplikasi kode (di Sheet)
+      if(items.some(i => i.kode === r.kode)){
+        skipped++;
+        continue;
+      }
+
+      try{
+        await fetch(
+          "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
+          {
+            method: "POST",
+            headers: { "Content-Type":"application/json" },
+            body: JSON.stringify({
+              action: "add",
+              kode: r.kode,
+              nama: r.nama,
+              kategori: r.kategori || "",
+              supplier: r.supplier || "",
+              stok: Number(r.stok) || 0,
+              min: Number(r.min) || 0,
+              satuan: r.satuan || ""
+            })
+          }
+        );
+
+        success++;
+
+      }catch(err){
+        console.error("Gagal import:", r.kode, err);
+        skipped++;
+      }
+    }
+
+    await loadInventoryFromSheet();
+    closeModal();
+
+    alert(`Import selesai\nBerhasil: ${success}\nDilewati: ${skipped}`);
+  };
+
+  reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+
+
+setActiveNav('btnInv');
+setActiveFilter("btnAll");
+
+
+
+</script>
+</body>
+</html>
