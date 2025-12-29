@@ -185,7 +185,6 @@ function autoList(input, cb){
     });
 }
 
-async function addItem(){
   const k = kode.value.trim();
 
   if(!k){
@@ -220,27 +219,34 @@ async function addItem(){
 
 /* MASUK & KELUAR */
 function openMasuk(){
-selected = null;
-modalContent.innerHTML=`
-<h3>Barang Masuk</h3>
-<input id="nama" onkeyup="autoList(this,selMasuk)" placeholder="Nama">
-<div id="list" class="list"></div>
-<input id="kode" readonly>
-<input id="jumlah" type="number" placeholder="Jumlah Barang Masuk">
-<button class="primary" onclick="
+  selected = null;
+  modalContent.innerHTML = `
+    <h3>Barang Masuk</h3>
+    <input id="nama" onkeyup="autoList(this,selMasuk)" placeholder="Nama">
+    <div id="list" class="list"></div>
+    <input id="kode" readonly>
+    <input id="jumlah" type="number" placeholder="Jumlah Barang Masuk">
+    <button class="primary" onclick="submitMasuk()">Simpan</button>
+    <button onclick="closeModal()">Batal</button>
+  `;
+  openModal();
+}
+
 if(!selected){
   alert('Pilih barang dari list');
   return;
 }
-selected.stok += +jumlah.value;
-history.push({
-  tgl: today(),
-  tipe: 'MASUK',
-  nama: selected.nama,
-  qty: jumlah.value
+await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec" + "?action=updateStock", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    kode: selected.kode,
+    delta: +jumlah.value
+  })
 });
+
+await loadInventoryFromSheet();
 closeModal();
-render();
 ">Simpan</button>
 <button onclick="closeModal()">Batal</button>`;openModal();
 }
@@ -264,16 +270,14 @@ if(+jumlah.value > selected.stok){
   alert('Jumlah melebihi stok yang tersedia');
   return;
 }
-selected.stok -= +jumlah.value;
-history.push({
-  tgl: today(),
-  tipe: 'KELUAR',
-  nama: selected.nama,
-  qty: jumlah.value,
-  ket: ket.value
+await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec" + "?action=updateStock", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    kode: selected.kode,
+    delta: -Number(jumlah.value)
+  })
 });
-closeModal();
-render();
 ">Simpan</button>
 
 <button onclick="closeModal()">Batal</button>`;openModal();
@@ -569,33 +573,3 @@ function importExcel(){
     rows.forEach(r => {
       // Cegah duplikasi kode
       if(items.some(i => i.kode === r.kode)) return;
-
-      items.push({
-        kode: r.kode,
-        nama: r.nama,
-        kategori: r.kategori,
-        supplier: r.supplier,
-        stok: Number(r.stok) || 0,
-        min: Number(r.min) || 0,
-        satuan: r.satuan
-      });
-    });
-
-    closeModal();
-    render();
-    alert("Import selesai");
-  };
-
-  reader.readAsArrayBuffer(fileInput.files[0]);
-}
-
-
-setActiveNav('btnInv');
-setActiveNav('btnInv');
-setActiveFilter("btnAll");
-
-
-
-</script>
-</body>
-</html>
