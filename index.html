@@ -239,7 +239,7 @@ async function submitMasuk(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec?action=updateStock",
+      "https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec?action=updateStock",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -324,7 +324,7 @@ async function submitKeluar(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec?action=updateStock",
+      "https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec?action=updateStock",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -408,7 +408,7 @@ async function saveAdjust(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec?action=updateItem",
+      "https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec?action=updateItem",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -552,7 +552,7 @@ window.onload = () => {
 async function saveOrderToSheet(order) {
   try {
     const res = await fetch(
-      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
+      "https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -602,7 +602,7 @@ async function addItem(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
+      "https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec",
       {
         method: "POST",
         headers: {"Content-Type":"application/json"},
@@ -651,14 +651,14 @@ function setActiveNav(id){
 }
 
   async function loadInventoryFromSheet(){
-    const res = await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec"); // ganti dengan Web App URL
+    const res = await fetch("https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec"); // ganti dengan Web App URL
     const data = await res.json();
     items = data;
     render();
   }
 
   async function saveItemToSheet(item, action){
-  await fetch("https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec", {
+  await fetch("https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
@@ -712,7 +712,7 @@ const importedKode = new Set(items.map(i => i.kode));
 
     try{
   const res = await fetch(
-    "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
+    "https://https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec",
     {
       method: "POST",
       headers: { "Content-Type":"application/json" },
