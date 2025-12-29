@@ -505,13 +505,14 @@ closeModal();
 
 <button onclick="closeModal()">Batal</button>`;openModal();
 }
-function selPO(i, input, listEl){
-  selected = i;
-  input.value = i.nama;
-  kode.value = i.kode;
-  satuan.value = i.satuan;
-  listEl.innerHTML = "";
+function selPO(item){
+  selected = item;
+  document.getElementById("nama").value = item.nama;
+  document.getElementById("kode").value = item.kode;
+  document.getElementById("satuan").value = item.satuan;
+  document.getElementById("list").innerHTML = "";
 }
+
 
 function fmt(num){
   return Number(num || 0).toLocaleString("id-ID");
@@ -681,7 +682,10 @@ async function importExcel(){
     const data = new Uint8Array(e.target.result);
     const workbook = XLSX.read(data, { type:'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+  defval: ""
+});
+
 
     if(!rows.length){
       alert("File Excel kosong");
@@ -690,6 +694,7 @@ async function importExcel(){
 
     let success = 0;
     let skipped = 0;
+const importedKode = new Set(items.map(i => i.kode));
 
     for(const r of rows){
       // validasi minimal
@@ -699,36 +704,46 @@ async function importExcel(){
       }
 
       // cegah duplikasi kode (di Sheet)
-      if(items.some(i => i.kode === r.kode)){
-        skipped++;
-        continue;
-      }
+      if(importedKode.has(r.kode)){
+  skipped++;
+  continue;
+}
 
-      try{
-        await fetch(
-          "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
-          {
-            method: "POST",
-            headers: { "Content-Type":"application/json" },
-            body: JSON.stringify({
-              action: "add",
-              kode: r.kode,
-              nama: r.nama,
-              kategori: r.kategori || "",
-              supplier: r.supplier || "",
-              stok: Number(r.stok) || 0,
-              min: Number(r.min) || 0,
-              satuan: r.satuan || ""
-            })
-          }
-        );
 
-        success++;
+    try{
+  const res = await fetch(
+    "https://script.google.com/macros/s/AKfycbww52ZzQDCeXNp-KUOA3qfcr3FgHgvGnSFzRxlF1yK-DPpjWJLx1znWNrNXHS9rHEqjbg/exec",
+    {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({
+        action: "add",
+        kode: r.kode,
+        nama: r.nama,
+        kategori: r.kategori || "",
+        supplier: r.supplier || "",
+        stok: Number(r.stok) || 0,
+        min: Number(r.min) || 0,
+        satuan: r.satuan || ""
+      })
+    }
+  );
 
-      }catch(err){
-        console.error("Gagal import:", r.kode, err);
-        skipped++;
-      }
+  const result = await res.json();
+
+  if(result.status !== "success"){
+    console.error("Sheet menolak data:", r.kode, result);
+    skipped++;
+    continue;
+  }
+
+  success++;
+importedKode.add(r.kode);
+}catch(err){
+  console.error("Fetch error:", r.kode, err);
+  skipped++;
+}
+
     }
 
     await loadInventoryFromSheet();
