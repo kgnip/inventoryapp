@@ -239,11 +239,12 @@ async function submitMasuk(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec?action=updateStock",
+      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec?action=updateStock",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "updateStock",
           kode: selected.kode,
           delta: jumlah
         })
@@ -324,11 +325,12 @@ async function submitKeluar(){
 
   try{
     await fetch(
-      "https:script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec?action=updateStock",
+      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec?action=updateStock",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "updateStock",
           kode: selected.kode,
           delta: -jumlah,
           ket: ket
@@ -397,6 +399,7 @@ async function saveAdjust(){
   if(adjustIndex === null) return;
 
   const payload = {
+    action: "update",
     kode: kode.value,
     nama: nama.value,
     kategori: kategori.value,
@@ -407,14 +410,19 @@ async function saveAdjust(){
   };
 
   try{
-    await fetch(
-      "https:script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec?action=updateItem",
+    const res = await fetch(
+      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       }
     );
+
+    const result = await res.json();
+    if(result.status !== "success"){
+      throw new Error("Update gagal");
+    }
 
     await loadInventoryFromSheet();
     adjustIndex = null;
@@ -552,7 +560,7 @@ window.onload = () => {
 async function saveOrderToSheet(order) {
   try {
     const res = await fetch(
-      "https:script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec",
+      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -602,7 +610,7 @@ async function addItem(){
 
   try{
     await fetch(
-      "https:script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec",
+      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
       {
         method: "POST",
         headers: {"Content-Type":"application/json"},
@@ -651,14 +659,14 @@ function setActiveNav(id){
 }
 
   async function loadInventoryFromSheet(){
-    const res = await fetch("https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec"); // ganti dengan Web App URL
+    const res = await fetch("https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec"); // ganti dengan Web App URL
     const data = await res.json();
     items = data;
     render();
   }
 
   async function saveItemToSheet(item, action){
-  await fetch("https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec", {
+  await fetch("https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
@@ -712,7 +720,7 @@ const importedKode = new Set(items.map(i => i.kode));
 
     try{
   const res = await fetch(
-    "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec/exec",
+    "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
     {
       method: "POST",
       headers: { "Content-Type":"application/json" },
