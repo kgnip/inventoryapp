@@ -239,7 +239,7 @@ async function submitMasuk(){
 
   try{
     await fetch(
-      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec?action=updateStock",
+      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -564,15 +564,30 @@ async function saveOrderToSheet(order) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(order)
+        body: JSON.stringify({
+          action: "order",
+          data: [order]
+        })
       }
     );
 
     const result = await res.json();
 
-    if(result.status !== "success"){
-      throw new Error("Gagal simpan ke Sheet");
+    if (result.status !== "success") {
+      throw new Error(result.message || "Order gagal");
     }
+
+    // hanya simpan lokal kalau Sheet sukses
+    orders.push(order);
+    saveOrders();
+    renderOrder();
+
+  } catch (err) {
+    console.error(err);
+    alert("Order GAGAL disimpan ke Google Sheet");
+  }
+}
+
 
     // BARU push ke local kalau Sheet sukses
     orders.push(order);
@@ -608,27 +623,36 @@ async function addItem(){
     satuan: satuan.value
   };
 
-  try{
-    await fetch(
-      "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
-      {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          action: "add",
-          ...item
-        })
-      }
-    );
+try {
+  const res = await fetch(
+    "https://script.google.com/macros/s/AKfycbzn43u0D_KV2B1-Yz8I7bMSub1m4BKVt-pXlFn91IRzkat1T0u3DqyXIiJtfSn84RJMhQ/exec",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add",
+        ...item
+      })
+    }
+  );
 
-    await loadInventoryFromSheet(); // refresh dari Sheet
-    closeModal();
+  const result = await res.json();
 
-  }catch(err){
-    alert("Gagal simpan ke Google Sheet");
-    console.error(err);
+  // ⛔ JIKA BACKEND MENOLAK
+  if (result.status !== "success") {
+    alert(result.message || "Gagal menyimpan item");
+    return; // ⬅️ PENTING: STOP DI SINI
   }
+
+  // ✅ HANYA JALAN JIKA BENAR-BENAR SUKSES
+  await loadInventoryFromSheet();
+  closeModal();
+
+} catch (err) {
+  console.error(err);
+  alert("Gagal koneksi ke Google Sheet");
 }
+
 
 
 function openImport(){
